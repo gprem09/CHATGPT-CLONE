@@ -2,8 +2,21 @@ import React from 'react'
 import { useState, useEffect } from 'react'
 
 const index = () => {
+
+  const [message, setMessage] = useState("Loading")
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:8080/api/home").then(
+      response => response.json()
+    ).then(
+      data => {
+        setMessage(data.message);
+      }
+    );
+  }, []);
+
   return (
-    <div>index</div>
+    <div>{message}</div>
   )
 }
 
