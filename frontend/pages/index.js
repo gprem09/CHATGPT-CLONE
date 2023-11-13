@@ -1,45 +1,57 @@
-import React from 'react'
-import { useState, useEffect } from 'react'
+import React, { useState } from 'react';
 
-const index = () => {
+const Index = () => {
+  const [userInput, setUserInput] = useState('');
+  const [conversation, setConversation] = useState([]);
 
-  const [message, setMessage] = useState("Loading")
-  const [people, setPeople] = useState([]);
+  const handleInputChange = (event) => {
+    setUserInput(event.target.value);
+  };
 
-  useEffect(() => {
-    fetch("http://localhost:8080/api/home").then(
-      (response) => response.json()
-    ).then(
-      (data) => {
-        setMessage(data.message);
-        setPeople(data.people);
-        console.log(data.people);
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const newConversation = [...conversation, { type: 'user', text: userInput }];
+    setConversation(newConversation);
+
+    try {
+      const response = await fetch('http://localhost:8080/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ input: userInput }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    );
-  }, []);
+
+      const data = await response.json();
+      setConversation([...newConversation, { type: 'bot', text: data.response }]);
+    } catch (error) {
+      console.error('Error during fetch:', error);
+      setConversation([...newConversation, { type: 'bot', text: 'Failed to get response.' }]);
+    }
+
+    setUserInput('');
+  };
 
   return (
-    // <div>
-    //   <div>{message}</div>
-      
-    //   {
-    //     people.map((person, index) => (
-    //       <div key={index}>
-    //         {person}
-    //       </div>
-    //     ))
-    //   }
-    // </div>
-
     <main className='min-h-screen bg-rgba'>
-
       <h1 className='text-xl'>PremGPT</h1>
-
-      
-
-
+      <div>
+        {conversation.map((msg, index) => (
+          <p key={index} className={msg.type === 'user' ? 'user-style' : 'bot-style'}>
+            {msg.text}
+          </p>
+        ))}
+      </div>
+      <form onSubmit={handleSubmit}>
+        <input className='text-black' type="text" value={userInput} onChange={handleInputChange} placeholder="Type your message here" />
+        <button type="submit">Send</button>
+      </form>
     </main>
-  )
-}
+  );
+};
 
-export default index
+export default Index;
