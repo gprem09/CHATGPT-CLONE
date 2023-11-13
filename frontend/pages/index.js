@@ -19,17 +19,26 @@ const index = () => {
   }, []);
 
   return (
-    <div>
-      <div>{message}</div>
+    // <div>
+    //   <div>{message}</div>
       
-      {
-        people.map((person, index) => (
-          <div key={index}>
-            {person}
-          </div>
-        ))
-      }
-    </div>
+    //   {
+    //     people.map((person, index) => (
+    //       <div key={index}>
+    //         {person}
+    //       </div>
+    //     ))
+    //   }
+    // </div>
+
+    <main className='min-h-screen bg-rgba'>
+
+      <h1 className='text-xl'>PremGPT</h1>
+
+      
+
+
+    </main>
   )
 }
 

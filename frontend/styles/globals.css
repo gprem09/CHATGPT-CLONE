@@ -1,3 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Special+Elite&display=swap');
+
+:root {
+    font-family: 'Lato';
+    color: #ffffff;
+}
+
+.bg-rgba {
+    background-color: #343541;
+}
