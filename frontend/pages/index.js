@@ -41,15 +41,15 @@ const Index = () => {
   return (
     <main className='min-h-screen bg-rgba'>
       <h1 className='text-xl'>PremGPT</h1>
-      <div>
+      <div className='flex justify-center'>
         {conversation.map((msg, index) => (
           <p key={index} className={msg.type === 'user' ? 'user-style' : 'bot-style'}>
             {msg.text}
           </p>
         ))}
       </div>
-      <form onSubmit={handleSubmit}>
-        <input className='text-black' type="text" value={userInput} onChange={handleInputChange} placeholder="Type your message here" />
+      <form className='flex p-4 space-x-5 border border-gray-400 rounded-2xl w-1/2 mx-auto' onSubmit={handleSubmit}>
+        <input className='bg-transparent focus:outline-none flex-1' type="text" value={userInput} onChange={handleInputChange} placeholder="Message PremGPT..." />
         <button type="submit">Send</button>
       </form>
     </main>
