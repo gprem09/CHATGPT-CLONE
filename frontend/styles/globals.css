@@ -4,6 +4,12 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Special+Elite&display=swap');
 
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
 :root {
     font-family: 'Lato';
     color: #ffffff;
@@ -13,3 +19,6 @@
     background-color: #343541;
 }
 
+.text {
+    color: #c0c0cd;
+}

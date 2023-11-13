@@ -39,19 +39,22 @@ const Index = () => {
   };
 
   return (
-    <main className='min-h-screen bg-rgba'>
+    <main className='flex flex-col min-h-screen bg-rgba'>
       <h1 className='text-xl'>PremGPT</h1>
-      <div className='flex justify-center'>
+      <div className='flex justify-center flex-grow'>
         {conversation.map((msg, index) => (
           <p key={index} className={msg.type === 'user' ? 'user-style' : 'bot-style'}>
             {msg.text}
           </p>
         ))}
       </div>
-      <form className='flex p-4 space-x-5 border border-gray-400 rounded-2xl w-1/2 mx-auto' onSubmit={handleSubmit}>
-        <input className='bg-transparent focus:outline-none flex-1' type="text" value={userInput} onChange={handleInputChange} placeholder="Message PremGPT..." />
-        <button type="submit">Send</button>
-      </form>
+      <div className="mt-auto">
+        <form className='flex p-4 space-x-5 border border-gray-500 rounded-2xl w-1/2 mx-auto' onSubmit={handleSubmit}>
+          <input className='bg-transparent focus:outline-none flex-1' type="text" value={userInput} onChange={handleInputChange} placeholder="Message PremGPT..." />
+          <button type="submit">Send</button>
+        </form>
+        <p className='text text-xs p-2 text-center space-y-2'>PremGPT can make mistakes. Consider checking important information.</p>
+      </div>
     </main>
   );
 };
