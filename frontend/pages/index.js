@@ -10,6 +10,9 @@ const Index = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    setUserInput('');
+
     const newConversation = [...conversation, { type: 'user', text: userInput }];
     setConversation(newConversation);
 
@@ -33,7 +36,6 @@ const Index = () => {
       setConversation([...newConversation, { type: 'bot', text: 'Failed to get response.' }]);
     }
 
-    setUserInput('');
   };
 
   return (
