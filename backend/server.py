@@ -36,7 +36,7 @@ def load_or_create_index():
 index = load_or_create_index()
 
 chain = ConversationalRetrievalChain.from_llm(
-    llm=ChatOpenAI(model="gpt-3.5-turbo"),
+    llm=ChatOpenAI(model="gpt-4"),
     retriever=index.vectorstore.as_retriever(search_kwargs={"k": 1}),
 )
 
