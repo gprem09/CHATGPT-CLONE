@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const Index = () => {
   const [userInput, setUserInput] = useState('');
   const [conversation, setConversation] = useState([]);
+
+  const messagesContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, []);
 
   const handleInputChange = (event) => {
     setUserInput(event.target.value);
@@ -10,50 +18,54 @@ const Index = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
+  
+    const userInputText = userInput;
     setUserInput('');
-
-    const newConversation = [...conversation, { type: 'user', text: userInput }];
-    setConversation(newConversation);
-
+  
+    const newUserMessage = { type: 'user', text: userInputText };
+  
+    setConversation(prev => [newUserMessage, ...prev]);
+  
     try {
       const response = await fetch('http://localhost:8080/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ input: userInput }),
+        body: JSON.stringify({ input: userInputText }),
       });
-
+  
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
+  
       const data = await response.json();
-      setConversation([...newConversation, { type: 'bot', text: data.response }]);
+      setConversation(prev => [{ type: 'bot', text: data.response }, ...prev]);
+  
     } catch (error) {
       console.error('Error during fetch:', error);
-      setConversation([...newConversation, { type: 'bot', text: 'Failed to get response.' }]);
+      setConversation(prev => [{ type: 'bot', text: 'Failed to get response.' }, ...prev]);
     }
-
   };
+  
 
   return (
     <main className='flex flex-col min-h-screen bg-rgba'>
       <h1 className='text-xl'>PremGPT</h1>
-      <div className='flex justify-center flex-grow'>
+      <div className='flex flex-col-reverse flex-grow overflow-auto' ref={messagesContainerRef}>
         {conversation.map((msg, index) => (
-          <p key={index} className={msg.type === 'user' ? 'user-style' : 'bot-style'}>
-            {msg.text}
-          </p>
+          <div key={index} className={`flex w-full justify-center`}>
+            <p className={msg.type === 'user' ? 'user-style' : 'bot-style'}>
+              {msg.type === 'user' ? `user: ${msg.text}` : `bot: ${msg.text}`}
+            </p>
+        </div>
         ))}
       </div>
       <div className="mt-auto">
-        <form className='flex p-4 space-x-5 border border-gray-500 rounded-2xl w-1/2 mx-auto' onSubmit={handleSubmit}>
+        <form className='flex p-4 space-x-5 border border-gray-400 rounded-2xl w-1/2 mx-auto' onSubmit={handleSubmit}>
           <input className='bg-transparent focus:outline-none flex-1' type="text" value={userInput} onChange={handleInputChange} placeholder="Message PremGPT..." />
           <button type="submit">Send</button>
         </form>
-        <p className='text text-xs p-2 text-center space-y-2'>PremGPT can make mistakes. Consider checking important information.</p>
       </div>
     </main>
   );
