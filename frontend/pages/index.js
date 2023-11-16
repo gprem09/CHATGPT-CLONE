@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 
 const Index = () => {
   const [userInput, setUserInput] = useState('');
-  const [conversation, setConversation] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [sessionId, setSessionId] = useState(null);
+  const [sessions, setSessions] = useState({});
+  const [currentSessionId, setCurrentSessionId] = useState(null);
 
   const messagesContainerRef = useRef(null);
 
   useEffect(() => {
-    const fetchChatHistory = async () => {
+    const fetchAllSessions = async () => {
       setIsLoading(true);
       try {
         const response = await fetch('http://localhost:8080/api/sessions');
@@ -17,28 +17,35 @@ const Index = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        const formattedData = data.flatMap(session =>
-          session.chats.flatMap(chat => [
-            { type: 'user', text: chat.user_input },
-            { type: 'bot', text: chat.bot_response }
-          ])
-        );
-        setConversation(formattedData);
+        setSessions(data.reduce((acc, session) => ({ ...acc, [session.session_id]: session.chats }), {}));
+        if (data.length > 0) {
+          setCurrentSessionId(data[0].session_id);
+        }
+        console.log(data);
       } catch (error) {
-        console.error("Error fetching chat history:", error);
+        console.error("Error fetching sessions:", error);
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchChatHistory();
+    fetchAllSessions();
   }, []);
+
+  const handleSelectSession = (sessionId) => {
+    setCurrentSessionId(sessionId);
+  };
+
+  const handleStartNewSession = () => {
+    const newSessionId = Object.keys(sessions).length; 
+    setCurrentSessionId(newSessionId);
+    setSessions(prev => ({ ...prev, [newSessionId]: [] }));
+  };
 
   useEffect(() => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
-  }, []);
+  }, [currentSessionId, sessions]);
 
   const handleInputChange = (event) => {
     setUserInput(event.target.value);
@@ -50,8 +57,8 @@ const Index = () => {
   
     setUserInput('');
   
-    const newUserMessage = { type: 'user', text: userInput };
-    setConversation(prev => [newUserMessage, ...prev]);
+    const updatedChats = [...(sessions[currentSessionId] || []), { type: 'user', text: userInput }];
+    setSessions(prev => ({ ...prev, [currentSessionId]: updatedChats }));
   
     try {
       const response = await fetch('http://localhost:8080/api/chat', {
@@ -59,7 +66,7 @@ const Index = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ input: userInput }),
+        body: JSON.stringify({ input: userInput, session_id: currentSessionId }),
       });
 
       if (!response.ok) {
@@ -67,11 +74,10 @@ const Index = () => {
       }
   
       const data = await response.json();
-      setConversation(prev => [{ type: 'bot', text: data.response }, ...prev]);
-  
+      const updatedChatsWithResponse = [...updatedChats, { type: 'bot', text: data.response }];
+      setSessions(prev => ({ ...prev, [currentSessionId]: updatedChatsWithResponse }));
     } catch (error) {
       console.error('Error during fetch:', error);
-      setConversation(prev => [{ type: 'bot', text: 'Failed to get response.' }, ...prev]);
     }
   };
   
@@ -82,13 +88,20 @@ const Index = () => {
   return (
     <main className='flex flex-col min-h-screen bg-rgba'>
       <h1 className='text-xl'>PremGPT</h1>
+      <button onClick={handleStartNewSession}>Start New Session</button>
+      <div>
+        {Object.keys(sessions).map(sessionId => (
+          <button key={sessionId} onClick={() => handleSelectSession(sessionId)}>
+            Session {sessionId}
+          </button>
+        ))}
+      </div>
       <div className='flex flex-col-reverse flex-grow overflow-auto mb-20' ref={messagesContainerRef}>
-        {conversation.map((msg, index) => (
+        {currentSessionId != null && sessions[currentSessionId]?.map((msg, index) => (
           <div key={index} className="message-container">
-            <p className={msg.type === 'user' ? 'user-style' : 'bot-style'}>
-              {msg.type === 'user' ? `You: ${msg.text}` : `PremGPT: ${msg.text}`}
-            </p>
-          </div>
+            <p className="user-style">You: {msg.user_input}</p>
+            <p className="bot-style">PremGPT: {msg.bot_response}</p>
+        </div>
         ))}
       </div>
       <div className="fixed bottom-0 left-0 right-0">
