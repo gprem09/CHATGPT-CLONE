@@ -8,6 +8,18 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.indexes import VectorstoreIndexCreator
 from langchain.indexes.vectorstore import VectorStoreIndexWrapper
 from langchain.vectorstores import Chroma
+import pymysql
+from db_config import *
+
+def get_db_connection():
+    return pymysql.connect(
+        host=MYSQL_DATABASE_HOST,
+        user=MYSQL_DATABASE_USER,
+        password=MYSQL_DATABASE_PASSWORD,
+        db=MYSQL_DATABASE_DB,
+        cursorclass=pymysql.cursors.DictCursor
+    )
+
 
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
@@ -44,15 +56,46 @@ chat_history_global = []
 
 @app.route("/api/chat", methods=['POST'])
 def chat():
-    global chat_history_global
     input_text = request.json.get('input')
     if not input_text:
         return jsonify({'error': 'No input provided'}), 400
 
+    session_id = 1
+
     result = chain({"question": input_text, "chat_history": chat_history_global})
     chat_history_global.append((input_text, result['answer']))
 
+    conn = get_db_connection()
+    with conn.cursor() as cursor:
+        cursor.execute('INSERT INTO chats (user_input, bot_response, session_id) VALUES (%s, %s, %s)', 
+                       (input_text, result['answer'], session_id))
+        conn.commit()
+    conn.close()
+
     return jsonify({'response': result['answer']})
+
+
+@app.route('/api/chats', methods=['GET'])
+def get_chats():
+    session_id = 1  # Static session ID for simplicity
+    conn = get_db_connection()
+    with conn.cursor() as cursor:
+        cursor.execute('SELECT * FROM chats WHERE session_id = %s', (session_id,))
+        chats = cursor.fetchall()
+    conn.close()
+    return jsonify(chats)
+
+
+
+@app.route('/api/session/<int:session_id>', methods=['DELETE'])
+def delete_session(session_id):
+    conn = get_db_connection()
+    with conn.cursor() as cursor:
+        cursor.execute('DELETE FROM chats WHERE session_id = %s', (session_id,))
+        conn.commit()
+    conn.close()
+    return '', 204
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=8080)

@@ -3,8 +3,58 @@ import React, { useState, useEffect, useRef } from 'react';
 const Index = () => {
   const [userInput, setUserInput] = useState('');
   const [conversation, setConversation] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentSessionId, setCurrentSessionId] = useState(0);
+  const [chatSessions, setChatSessions] = useState([{id: 0, conversation: []}]);
+
 
   const messagesContainerRef = useRef(null);
+
+  const handleNewChatSession = () => {
+    const newSessionId = chatSessions.length;
+    setChatSessions(prevSessions => [...prevSessions, {id: newSessionId, conversation: []}]);
+    setCurrentSessionId(newSessionId);
+  };
+  
+  const handleDeleteChatSession = async (sessionId) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/session/${sessionId}`, { method: 'DELETE' });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      // Update state to remove the deleted session
+      setChatSessions(prevSessions => prevSessions.filter(session => session.id !== sessionId));
+      // Optional: Switch to a different session
+    } catch (error) {
+      console.error('Error deleting chat session:', error);
+    }
+  };
+
+
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('http://localhost:8080/api/chats');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        // Assuming each item in data has 'user_input' and 'bot_response'
+        const formattedData = data.flatMap(item => [
+          { type: 'user', text: item.user_input },
+          { type: 'bot', text: item.bot_response }
+        ]);
+        setConversation(formattedData);
+      } catch (error) {
+        console.error("Error fetching chat history:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchChatHistory();
+  }, []);
 
   useEffect(() => {
     if (messagesContainerRef.current) {
@@ -48,6 +98,9 @@ const Index = () => {
     }
   };
   
+  if (isLoading) {
+    return <p>Loading chat history...</p>;
+  }
 
   return (
     <main className='flex flex-col min-h-screen bg-rgba'>
