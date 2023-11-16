@@ -54,13 +54,20 @@ chain = ConversationalRetrievalChain.from_llm(
 
 chat_history_global = []
 
+last_session_id = 0
+
 @app.route("/api/chat", methods=['POST'])
 def chat():
+    global last_session_id
+
     input_text = request.json.get('input')
     if not input_text:
         return jsonify({'error': 'No input provided'}), 400
 
-    session_id = 1
+    if 'new_session' in request.json and request.json['new_session']:
+        last_session_id += 1
+
+    session_id = last_session_id if 'session_id' not in request.json else request.json['session_id']
 
     result = chain({"question": input_text, "chat_history": chat_history_global})
     chat_history_global.append((input_text, result['answer']))
@@ -75,9 +82,28 @@ def chat():
     return jsonify({'response': result['answer']})
 
 
-@app.route('/api/chats', methods=['GET'])
-def get_chats():
-    session_id = 1  # Static session ID for simplicity
+@app.route('/api/sessions', methods=['GET'])
+def list_sessions():
+    conn = get_db_connection()
+    with conn.cursor() as cursor:
+        cursor.execute('SELECT session_id, user_input, bot_response FROM chats WHERE session_id IS NOT NULL ORDER BY session_id, timestamp')
+        results = cursor.fetchall()
+    conn.close()
+
+    sessions = {}
+    for row in results:
+        session_id = row['session_id']
+        if session_id not in sessions:
+            sessions[session_id] = []
+        sessions[session_id].append({'user_input': row['user_input'], 'bot_response': row['bot_response']})
+
+    formatted_sessions = [{"session_id": sid, "chats": chats} for sid, chats in sessions.items()]
+    return jsonify(formatted_sessions)
+
+
+
+@app.route('/api/session/<int:session_id>', methods=['GET'])
+def get_session_chats(session_id):
     conn = get_db_connection()
     with conn.cursor() as cursor:
         cursor.execute('SELECT * FROM chats WHERE session_id = %s', (session_id,))
